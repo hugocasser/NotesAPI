@@ -7,11 +7,11 @@ using Notes.WebApi.Middleware;
 
 namespace Notes.WebApi;
 
-public class Startup
+public class StartUp
 {
     public IConfiguration Configuration { get; }
 
-    public Startup(IConfiguration configuration)
+    public StartUp(IConfiguration configuration)
     {
         Configuration = configuration;
     }
