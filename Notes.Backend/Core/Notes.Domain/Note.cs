@@ -7,5 +7,5 @@ public class Note
     public string Title { get; set; } 
     public string Details { get; set; } 
     public DateTime CreationTime { get; set; }
-    public DateTime EditTime { get; set; }
+    public DateTime? EditTime { get; set; }
 }
