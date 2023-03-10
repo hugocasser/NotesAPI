@@ -6,11 +6,10 @@ using Notes.Application.Notes.Commands.DeleteNote;
 using Notes.Application.Notes.Commands.UpdateNote;
 using Notes.Application.Notes.Queries.GetNoteDetails;
 using Notes.Application.Notes.Queries.GetNoteList;
-using Notes.Domain;
 using Notes.WebApi.Models;
 
 namespace Notes.WebApi.Controllers;
-
+[Produces("Application/json")]
 [Route("api/[controller]")]
 public class NoteController : BaseController
 {
@@ -19,8 +18,20 @@ public class NoteController : BaseController
     public NoteController(IMapper mapper) =>
         _mapper = mapper;
 
+    /// <summary>
+    /// Gets the list of notes
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    /// GET /note
+    /// </remarks>
+    /// <returns>Returns NoteListVm</returns>
+    /// <response code ="200">Success</response>
+    /// <response code="401">If the user unautorized</response>
     [HttpGet]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<NoteListVm>> GetAll()
     {
         var query = new GetNoteListQuery
@@ -30,7 +41,7 @@ public class NoteController : BaseController
         var vm = await Mediator.Send(query);
         return Ok(vm);
     }
-
+    
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<NoteDetailsVm>> Get(Guid id)
