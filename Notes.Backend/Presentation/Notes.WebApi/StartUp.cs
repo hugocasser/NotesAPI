@@ -1,10 +1,13 @@
 ﻿using System.Reflection;
 using Notes.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.Options;
 using Notes.Application.Common.Mappings;
 using Notes.Application.Interfaces;
 using Notes.Persistence;
 using Notes.WebApi.Middleware;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Notes.WebApi;
 
@@ -16,6 +19,7 @@ public class StartUp
     {
         Configuration = configuration;
     }
+
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddAutoMapper(config =>
@@ -37,35 +41,43 @@ public class StartUp
             });
         });
         services.AddAuthentication(config =>
-        {
-            config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
+            {
+                config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer("Bearer", options =>
             {
                 options.Authority = "https://localhost:7273/";
                 options.Audience = "NotesWebAPI";
                 options.RequireHttpsMetadata = false;
             });
-        services.AddSwaggerGen(config =>
-        {
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            config.IncludeXmlComments(xmlPath);
-        });
+        services.AddVersionedApiExplorer(options =>
+            options.GroupNameFormat = "'v'VVV");
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>,
+            ConfigureSwaggerOptions>();
+        services.AddSwaggerGen();
+
+        services.AddApiVersioning();
     }
 
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
+        IApiVersionDescriptionProvider provider)
     {
         if (env.IsDevelopment())
         {
-            
             app.UseDeveloperExceptionPage();
         }
 
         app.UseSwagger();
         app.UseSwaggerUI(config =>
         {
+            foreach (var description in provider.ApiVersionDescriptions)
+            {
+                config.SwaggerEndpoint(
+                    $"/swagger/{description.GroupName}/swagger.json",
+                    description.GroupName.ToUpperInvariant());
+                config.RoutePrefix = string.Empty;
+            }
             config.RoutePrefix = string.Empty;
             config.SwaggerEndpoint("swagger/v1/swagger.json", "Notes API");
         });
@@ -75,9 +87,7 @@ public class StartUp
         app.UseCors("AllowAll");
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
+        app.UseApiVersioning();
+        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }
